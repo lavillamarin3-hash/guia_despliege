@@ -97,7 +97,7 @@ DATOS 10.10.10.14
 <h3>Información recuperada del proyecto</h3>
 <ul>
 <li>Carpeta activa: <code>C:\Users\HP\Documents\Codex\Proyecto_CTF_Fase5_Laboratorio_Ranking_Top10\ctf_project</code>.</li>
-<li>Hay cambios locales recientes del reloj y del trabajo mediante Kali. La copia de código indicada aquí los incluye; clonar solamente GitHub podría dejarlos fuera.</li>
+<li>El código se descarga desde <code>ctf-platform</code> en GitHub. Los cambios que permanezcan únicamente en Windows deben publicarse primero mediante <code>git push</code>.</li>
 <li>Las guías actuales de bases están en <code>C:\Users\HP\Documents\Codex\cociber-ctf-deploy</code>.</li>
 <li>La cuenta <code>cociberctf</code> es administrativa. La plataforma se conecta con <strong><code>cociber_app</code></strong>, que tiene permisos de ejecución.</li>
 <li><code>cociber_app</code> y su contraseña <strong>no son un usuario y contraseña para entrar a la página web</strong>.</li>
@@ -275,46 +275,50 @@ sudo docker compose version
 </code></pre>
 <p><strong>Resultado esperado:</strong> <code>Hello from Docker!</code> y una versión de Compose. Usa <code>sudo docker</code> en toda la guía. No es necesario añadir tu cuenta al grupo Docker.</p>
 <p>La sintaxis oficial puede actualizarse; se verificó para Ubuntu 26.04 en <a href="https://docs.docker.com/engine/install/ubuntu/">Docker Engine para Ubuntu</a>.</p>
-<h2 id="paso-8">8 Copiar el código actual desde Windows</h2>
-<p>Usaremos una copia de <code>backend</code> y <code>frontend</code> de tu carpeta real. No se copiarán las bases locales ni los archivos de contraseñas dentro del paquete de código.</p>
-<p><strong>Dónde: WINDOWS, en una pestaña PowerShell que no esté dentro de SSH.</strong></p>
-<pre><code class="language-powershell">$proyectoCTF = &#39;C:\Users\HP\Documents\Codex\Proyecto_CTF_Fase5_Laboratorio_Ranking_Top10\ctf_project&#39;
-$trabajoCTF = &#39;C:\Users\HP\Documents\Codex\2026-10-22\c-users-hp-documents-codex-proyecto-2\work\transferencia&#39;
-New-Item -ItemType Directory -Force -Path $trabajoCTF | Out-Null
-tar.exe -czf &quot;$trabajoCTF\ctf-codigo.tar.gz&quot; --exclude=node_modules --exclude=dist --exclude=.env --exclude=&#39;.env.*&#39; --exclude=.venv --exclude=venv --exclude=__pycache__ --exclude=&#39;*.pyc&#39; --exclude=.git --exclude=work --exclude=outputs -C $proyectoCTF backend frontend
+<h2 id="paso-8">8 Descargar el código de la plataforma desde GitHub</h2>
+<p>En lugar de copiar el proyecto desde Windows, descarga <strong>backend</strong> y <strong>frontend</strong> directamente de la rama <code>main</code> de <a href="https://github.com/lavillamarin3-hash/ctf-platform">ctf-platform</a>. Solo se incluyen los cambios publicados en GitHub mediante <code>git push</code>; los cambios que permanezcan únicamente en tu equipo local no aparecerán aquí.</p>
+<p><strong>Dónde: WEB, en la sesión SSH de Ubuntu.</strong> Instala Git:</p>
+<pre><code class="language-bash">sudo apt update
+sudo apt install -y git
+git --version
 </code></pre>
-<p>Comprueba que el paquete existe y guarda su huella. Una huella SHA-256 permite comprobar que el archivo no cambió durante la copia:</p>
-<pre><code class="language-powershell">Get-Item &quot;$trabajoCTF\ctf-codigo.tar.gz&quot;
-Get-FileHash &quot;$trabajoCTF\ctf-codigo.tar.gz&quot; -Algorithm SHA256
-tar.exe -tzf &quot;$trabajoCTF\ctf-codigo.tar.gz&quot; | Select-String -Pattern &#39;(^|/)\.env($|\.)|node_modules/|\.venv/&#39;
+<p><strong>En un despliegue nuevo</strong>, asegúrate de que <code>/opt/ctf</code> no contenga una instalación previa:</p>
+<pre><code class="language-bash">ls -ld /opt/ctf 2&gt;/dev/null || true
 </code></pre>
-<p>La última orden <strong>no debe mostrar coincidencias</strong>. Si aparecen archivos <code>.env</code>, no transfieras el paquete: corrige las exclusiones primero. Guarda el resultado SHA-256 para compararlo después.</p>
-<p>Copia código y plantillas; reemplaza <code>TU_USUARIO_WEB</code> en ambas líneas:</p>
-<pre><code class="language-powershell">scp &quot;$trabajoCTF\ctf-codigo.tar.gz&quot; TU_USUARIO_WEB@10.10.10.13:~/ctf-codigo.tar.gz
-scp &#39;C:\Users\HP\Documents\Codex\2026-10-22\c-users-hp-documents-codex-proyecto-2\outputs\Plantillas_Despliegue_Web_CTF.zip&#39; TU_USUARIO_WEB@10.10.10.13:~/plantillas-web.zip
+<p>Si la carpeta no existe o está vacía, descarga el proyecto:</p>
+<pre><code class="language-bash">sudo install -d -m 0755 -o "$USER" -g "$(id -gn)" /opt/ctf
+git clone --branch main --single-branch https://github.com/lavillamarin3-hash/ctf-platform.git /opt/ctf
+cd /opt/ctf
 </code></pre>
-<p>Si vas a <strong>conservar la plataforma anterior</strong>, copia su configuración privada por separado:</p>
-<pre><code class="language-powershell">scp &quot;$proyectoCTF\.env&quot; TU_USUARIO_WEB@10.10.10.13:~/ctf-original.env
+<p>Si <code>/opt/ctf</code> ya tiene una aplicación instalada, <strong>no</strong> sobrescribas ni borres nada. Utiliza el procedimiento de actualización del paso 17, después de respaldar datos y configuración.</p>
+<p>Valida el repositorio y registra el commit exacto desplegado:</p>
+<pre><code class="language-bash">cd /opt/ctf
+git remote -v
+git branch --show-current
+git rev-parse HEAD
+test -f backend/Dockerfile &amp;&amp; test -f frontend/Dockerfile &amp;&amp; echo 'Código descargado correctamente'
+git status --short
 </code></pre>
-<p>Ese archivo contiene secretos. No lo pegues en un chat, ni lo agregues al paquete público ni al repositorio.</p>
-<p><strong>Dónde: WEB.</strong></p>
-<pre><code class="language-bash">sha256sum ~/ctf-codigo.tar.gz
-ls -ld /opt/ctf
+<p>El remoto debe apuntar a <code>https://github.com/lavillamarin3-hash/ctf-platform.git</code> y la rama debe ser <code>main</code>. <strong>No uses <code>docker compose up</code> con <code>docker-compose.yml</code> del proyecto</strong>, porque ese archivo inicia también PostgreSQL y Redis locales. Esta guía utiliza <code>compose.web.yml</code> para enlazar con la VM de DATOS.</p>
+<h3>Descargar las plantillas para el despliegue separado</h3>
+<p>Las plantillas auxiliares no forman parte del código de <code>ctf-platform</code>; se obtienen del repositorio <a href="https://github.com/lavillamarin3-hash/guia_despliege">guia_despliege</a>. <strong>Dónde: WEB.</strong></p>
+<pre><code class="language-bash">cd /opt/ctf
+mkdir -p deploy
+for archivo in compose.web.yml preparar_entorno.py verificar_servicios.py crear_admin_inicial.py; do
+  curl -fsSL "https://raw.githubusercontent.com/lavillamarin3-hash/guia_despliege/main/plantillas_web/$archivo" -o "deploy/$archivo" || exit 1
+done
+sudo install -m 0644 deploy/compose.web.yml /opt/ctf/compose.web.yml
+ls -l deploy/ compose.web.yml
 </code></pre>
-<p>La huella debe coincidir con Windows. Si <code>/opt/ctf</code> no existe, es normal. Si ya existe una instalación allí, no la sobrescribas: usa el procedimiento de actualización del paso 17.</p>
-<p>Para una carpeta nueva:</p>
-<pre><code class="language-bash">sudo install -d -m 0755 /opt/ctf
-sudo tar --no-same-owner -xzf ~/ctf-codigo.tar.gz -C /opt/ctf
-sudo install -d -m 0755 /opt/ctf/deploy
-sudo unzip ~/plantillas-web.zip -d /opt/ctf/deploy
-sudo chmod 0755 /opt/ctf/deploy
-sudo chmod 0644 /opt/ctf/deploy/*.py /opt/ctf/deploy/compose.web.yml
-sudo install -m 0644 /opt/ctf/deploy/compose.web.yml /opt/ctf/compose.web.yml
-ls -l /opt/ctf
+<p>Debes ver los cuatro archivos auxiliares y <code>compose.web.yml</code> en la raíz. El archivo original <code>docker-compose.yml</code> permanece intacto; no lo ejecutes en el servidor WEB. Si Git marcara archivos auxiliares como no rastreados, no los elimines.</p>
+<h3>Conservar la configuración privada de una instalación anterior (opcional)</h3>
+<p>Para migrar tu plataforma existente, necesitarás además el <code>.env</code> anterior, <strong>que no está en GitHub</strong>. <strong>Dónde: WINDOWS, PowerShell fuera de SSH.</strong> Sustituye <code>TU_USUARIO_WEB</code>:</p>
+<pre><code class="language-powershell">scp 'C:\Users\HP\Documents\Codex\Proyecto_CTF_Fase5_Laboratorio_Ranking_Top10\ctf_project\.env' TU_USUARIO_WEB@10.10.10.13:~/ctf-original.env
 </code></pre>
-<p>Debes ver <code>backend</code>, <code>frontend</code>, <code>deploy</code> y <code>compose.web.yml</code>. Si copiaste el entorno anterior:</p>
+<p><strong>Dónde: WEB.</strong> Protege el archivo para el paso 10:</p>
 <pre><code class="language-bash">chmod 600 ~/ctf-original.env
 </code></pre>
+<p>Si es una instalación nueva, omite esa copia y utiliza la opción B del paso 10. Nunca publiques credenciales, claves privadas, respaldos ni archivos <code>.env</code> en GitHub.</p>
 <h2 id="paso-9">9 Obtener el archivo privado de conexión a las bases</h2>
 <p><strong>Dónde: DATOS.</strong> Entra a su consola o por SSH. Estos comandos se basan en el repositorio de despliegue ya preparado:</p>
 <pre><code class="language-bash">cd /opt/cociber-ctf-deploy
@@ -584,25 +588,37 @@ sudo -u postgres psql -X -d cociber_ctf -c &quot;SELECT count(*) AS completados,
 </tbody></table>
 <p><strong>Modificar <code>web.env</code> y ejecutar <code>restart</code> no recarga las variables en el contenedor.</strong> Usa el comando de recreación de la tabla.</p>
 <h3>Actualizar el código sin perder la copia anterior</h3>
-<p>Primero cierra las sesiones de laboratorio, conserva una copia de la base y programa un momento sin usuarios. Copia el nuevo paquete como <code>~/ctf-codigo-nuevo.tar.gz</code>.</p>
-<p>En WEB, guarda las imágenes que están funcionando y detén la aplicación:</p>
+<p>Con el código obtenido por Git, las siguientes versiones se actualizan mediante <code>git pull</code>, <strong>sin transferir archivos comprimidos desde Windows</strong>. Programa el mantenimiento sin estudiantes conectados, respalda la base en DATOS y comprueba el estado:</p>
+<pre><code class="language-bash">cd /opt/ctf
+git remote -v
+git branch --show-current
+git status --short
+git rev-parse HEAD
+git fetch origin main
+git log --oneline HEAD..origin/main
+</code></pre>
+<p>Verifica que el remoto sea <code>https://github.com/lavillamarin3-hash/ctf-platform.git</code> y la rama <code>main</code>. Si existen modificaciones locales rastreadas, revísalas antes de continuar: no uses <code>git reset --hard</code> ni <code>git clean -fd</code>. Los archivos <code>deploy/</code> y <code>compose.web.yml</code> se mantienen por separado de Git.</p>
+<p>En WEB guarda las imágenes actuales y detén la plataforma:</p>
 <pre><code class="language-bash">cd /opt/ctf
 sudo docker image tag cociber-api:despliegue-20261022 cociber-api:anterior
 sudo docker image tag cociber-web:despliegue-20261022 cociber-web:anterior
 sudo docker compose -f compose.web.yml stop
 </code></pre>
-<p>Guarda el código y la configuración Compose antes de extraer. El nombre con fecha evita sobrescribir el respaldo anterior:</p>
+<p>Respalda el código y la configuración:</p>
 <pre><code class="language-bash">sudo install -d -m 0700 /var/backups/cociber-web
-sudo tar -czf &quot;/var/backups/cociber-web/codigo-$(date +%Y%m%d-%H%M%S).tar.gz&quot; -C /opt/ctf backend frontend deploy compose.web.yml
-sudo cp -a /etc/cociber-ctf &quot;/var/backups/cociber-web/config-$(date +%Y%m%d-%H%M%S)&quot;
+sudo tar -czf "/var/backups/cociber-web/codigo-$(date +%Y%m%d-%H%M%S).tar.gz" -C /opt/ctf backend frontend deploy compose.web.yml
+sudo cp -a /etc/cociber-ctf "/var/backups/cociber-web/config-$(date +%Y%m%d-%H%M%S)"
 </code></pre>
-<p>Para evitar que queden archivos eliminados de versiones antiguas, prepara primero un directorio de versión nuevo; no mezcles a ciegas el paquete sobre la carpeta activa. La sustitución de directorios debe conservar la copia anterior, las rutas de <code>deploy</code>, el Compose y la configuración privada. Si no conoces ese procedimiento, realiza esta actualización acompañado por el responsable técnico; el despliegue inicial anterior no requiere esta operación.</p>
-<p>Después de colocar el código nuevo revisado:</p>
-<pre><code class="language-bash">sudo docker compose -f compose.web.yml build
+<p>Después de revisar los commits pendientes, aplica solamente una actualización de avance rápido, comprueba los auxiliares y reconstruye:</p>
+<pre><code class="language-bash">cd /opt/ctf
+git pull --ff-only origin main
+git rev-parse HEAD
+test -f deploy/compose.web.yml &amp;&amp; test -f compose.web.yml &amp;&amp; echo 'Plantillas presentes'
+sudo docker compose -f compose.web.yml build
 sudo docker compose -f compose.web.yml run --rm --no-deps api python /opt/ctf-deploy/verificar_servicios.py
 sudo docker compose -f compose.web.yml up -d
 </code></pre>
-<p>Si el cambio incluye migraciones de base, revísalas por separado antes de aplicarlas. Volver a una imagen antigua no revierte cambios de esquema ni datos.</p>
+<p>Si Git informa un conflicto o no aparecen los auxiliares, detente y revisa antes de construir. Para actualizar <code>compose.web.yml</code> o los scripts de despliegue, revisa aparte las plantillas publicadas en <code>guia_despliege</code>. Si hay migraciones de datos, valida su procedimiento antes de aplicarlas: volver a imágenes anteriores no revierte la base.</p>
 <h3>Volver a la imagen anterior si la actualización falla</h3>
 <p>Solo si creaste las etiquetas <code>anterior</code> y no se modificó el esquema de forma incompatible:</p>
 <pre><code class="language-bash">sudo docker compose -f compose.web.yml stop
@@ -737,7 +753,7 @@ sudo docker compose -f compose.web.yml up -d --no-build --force-recreate
 <li><input disabled="" type="checkbox"> Gateway, DNS y tarjeta de red están confirmados.</li>
 <li><input disabled="" type="checkbox"> DATOS responde en <code>.14</code>, tiene la base <code>cociber_ctf</code> y las cuentas <code>cociber_app</code>.</li>
 <li><input disabled="" type="checkbox"> Se conservaron los datos anteriores o se eligió conscientemente la instalación nueva.</li>
-<li><input disabled="" type="checkbox"> El código copiado incluye los cambios locales recientes.</li>
+<li><input disabled="" type="checkbox"> Se clonó la rama <code>main</code> de <code>ctf-platform</code> y se registró el commit desplegado.</li>
 <li><input disabled="" type="checkbox"> Los secretos están fuera del código y del ZIP; <code>web.env</code> tiene permisos 600.</li>
 <li><input disabled="" type="checkbox"> El Compose nuevo enumera únicamente <code>api</code> y <code>web</code>.</li>
 <li><input disabled="" type="checkbox"> El build terminó sin errores y <code>pip check</code> / <code>nginx -t</code> aprobaron.</li>

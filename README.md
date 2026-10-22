@@ -8,7 +8,7 @@ Guía paso a paso para instalar la plataforma en **Ubuntu Server 26.04**, con el
 2. También puedes descargar la [versión HTML](GUIA_DESPLIEGUE_CTF_UBUNTU_26_04.html) y abrirla con tu navegador para leer o imprimir.
 3. Descarga [las plantillas de despliegue](Plantillas_Despliegue_Web_CTF.zip) desde el botón de descarga del archivo. La guía explica dónde copiarlas y en qué orden utilizarlas.
 
-Si descargas el ZIP desde GitHub, guárdalo en la ruta de Windows indicada en el paso 8 o sustituye esa ruta por la carpeta donde lo descargaste.
+La guía indica en el paso 8 cómo descargar directamente en Ubuntu el código y los cuatro archivos auxiliares de `plantillas_web/`, sin depender de rutas locales de Windows.
 
 ## Qué contiene
 
@@ -19,7 +19,7 @@ Si descargas el ZIP desde GitHub, guárdalo en la ruta de Windows indicada en el
 
 Los archivos también se encuentran individualmente en [plantillas_web](plantillas_web/).
 
-El código de la plataforma debe copiarse desde tu carpeta de trabajo según la guía. Este repositorio no contiene la aplicación completa, contraseñas, archivos `.env`, claves SSH ni respaldos de bases.
+El código de la plataforma se obtiene con `git clone` desde [ctf-platform](https://github.com/lavillamarin3-hash/ctf-platform), y las actualizaciones se aplican con `git pull` siguiendo el paso 17. Este repositorio de guía no contiene la aplicación completa, contraseñas, archivos `.env`, claves SSH ni respaldos de bases.
 
 ## Repositorios relacionados
 
