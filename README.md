@@ -29,4 +29,3 @@ El código de la plataforma debe copiarse desde tu carpeta de trabajo según la 
 ## Estado de validación
 
 Preparado el 22 de octubre de 2026. La guía se contrastó con el código y la documentación de despliegue existentes. Se revisó la sintaxis de los auxiliares y la coherencia del procedimiento. La instalación y las pruebas de conexión contra las VM reales deben ejecutarse siguiendo los puntos de comprobación de la guía; no se presentan como pruebas ya realizadas.
-

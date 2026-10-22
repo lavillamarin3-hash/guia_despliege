@@ -1,0 +1,769 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Guía de despliegue Cociber CTF</title><style>
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:#172b3a;background:#f3f5f7;font:16px/1.65 system-ui,Segoe UI,sans-serif}aside{position:fixed;left:0;top:0;bottom:0;width:280px;overflow:auto;padding:26px 20px;background:#fff;border-right:1px solid #dce3e8}aside b{display:block;color:#155e75;margin-bottom:20px}aside a{display:block;font-size:13px;color:#405365;text-decoration:none;padding:7px 0;line-height:1.4}aside a:hover{color:#006c8b}main{margin:36px 40px 60px 316px;max-width:1080px;background:white;padding:40px 48px;border:1px solid #dce3e8;border-radius:12px}h1{font-size:32px;line-height:1.25;color:#132e40;margin:0 0 22px}h2{font-size:25px;color:#12364a;margin-top:52px;scroll-margin-top:20px}h3{font-size:19px;margin-top:32px}p,li{max-width:94ch}a{color:#006c8b}table{border-collapse:collapse;width:100%;font-size:14px;margin:22px 0;display:block;overflow:auto}td,th{border:1px solid #d9e1e7;padding:10px 13px;text-align:left;vertical-align:top}th{background:#e9f2f6}tr:nth-child(even){background:#fafcfd}pre{position:relative;background:#142b3a;color:#f2f7fa;border-radius:7px;padding:19px 22px;overflow:auto;line-height:1.5;font-size:13px}code{font-family:Consolas,ui-monospace,monospace}p code,li code,td code{background:#eef3f6;padding:2px 4px;border-radius:3px;overflow-wrap:anywhere}pre code{white-space:pre}button{font:inherit;padding:6px 12px;border:1px solid #a8bcc9;border-radius:5px;background:#f7fbfd;color:#173c50;cursor:pointer}.copy{position:absolute;right:7px;top:7px;font-size:11px}.print{margin-bottom:24px}blockquote{border-left:4px solid #5a9db6;margin:20px 0;padding:2px 20px;background:#eff7fa}@media(max-width:1000px){aside{display:none}main{margin:16px;padding:24px;max-width:none}}@media print{body{background:#fff;font-size:10pt}aside,button{display:none!important}main{margin:0;padding:0;border:0;max-width:none}h1{font-size:24pt}h2{font-size:17pt;break-after:avoid}h3{break-after:avoid}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f3f5;color:#111;border:1px solid #ddd;font-size:8pt}pre code{white-space:pre-wrap}table{font-size:9pt;display:table}tr{break-inside:avoid}a{color:#111}p{orphans:3;widows:3}}
+</style></head><body><aside><b>COCIBER CTF<br>Despliegue en Ubuntu 26.04</b><a href="#paso-1">1 Cómo leer esta guía</a><a href="#paso-2">2 Qué se instalará y qué está confirmado</a><a href="#paso-3">3 Lo que debes tener antes de comenzar</a><a href="#paso-4">4 Confirmar y configurar la dirección del servidor WEB</a><a href="#paso-5">5 Entrar por SSH y preparar Ubuntu</a><a href="#paso-6">6 Comprobar que la VM de DATOS está preparada</a><a href="#paso-7">7 Instalar Docker en WEB</a><a href="#paso-8">8 Copiar el código actual desde Windows</a><a href="#paso-9">9 Obtener el archivo privado de conexión a las bases</a><a href="#paso-10">10 Crear la configuración privada de la plataforma</a><a href="#paso-11">11 Revisar Guacamole y las rutas hacia los laboratorios</a><a href="#paso-12">12 Construir backend y frontend</a><a href="#paso-13">13 Probar las bases y preparar el acceso inicial</a><a href="#paso-14">14 Iniciar la plataforma</a><a href="#paso-15">15 Comprobar la plataforma desde el navegador</a><a href="#paso-16">16 Acceso de red y HTTPS</a><a href="#paso-17">17 Operación diaria actualizaciones y respaldo</a><a href="#paso-18">18 Solución de problemas</a><a href="#paso-19">19 Lista final de comprobación</a><a href="#paso-20">20 Trazabilidad y referencias</a></aside><main><button class="print" onclick="window.print()">Imprimir o guardar como PDF</button><h1>Guía paso a paso para desplegar Cociber CTF en Ubuntu Server 26 04</h1>
+<p><strong>Servidor web:</strong> <code>10.10.10.13/24</code> · <strong>Servidor de datos:</strong> <code>10.10.10.14/24</code><br><strong>Preparada el 22 de octubre de 2026</strong> a partir del código local y los chats del proyecto.</p>
+<p>Esta guía lleva la plataforma de tu carpeta de Windows a la máquina virtual del servidor web. Al terminar podrás abrir <strong><a href="http://10.10.10.13">http://10.10.10.13</a></strong> desde un equipo con acceso a esa red. El backend y el frontend se ejecutarán en el servidor web; PostgreSQL y Redis seguirán en la VM de datos existente.</p>
+<p>Se entrega un procedimiento para ejecutar. <strong>No se ha realizado una conexión ni una instalación en tus VM durante la preparación de esta guía.</strong> Cada comprobación indica qué debes observar antes de continuar.</p>
+<h2 id="paso-1">1 Cómo leer esta guía</h2>
+<p>Hay tres equipos. Antes de copiar un comando, mira dónde se ejecuta:</p>
+<table>
+<thead>
+<tr>
+<th>Nombre que usaremos</th>
+<th>Equipo</th>
+<th>Para qué sirve</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>WINDOWS</td>
+<td>Tu computadora HP</td>
+<td>Tiene la carpeta actual del proyecto y esta guía</td>
+</tr>
+<tr>
+<td>WEB</td>
+<td>Ubuntu Server 26.04 en <code>10.10.10.13</code></td>
+<td>Ejecutará la plataforma</td>
+</tr>
+<tr>
+<td>DATOS</td>
+<td>La VM existente en <code>10.10.10.14</code></td>
+<td>Ya aloja o debe terminar de preparar PostgreSQL y Redis</td>
+</tr>
+</tbody></table>
+<p>Una <strong>terminal</strong> es la ventana donde escribes órdenes. En Windows abre el menú Inicio, escribe <strong>PowerShell</strong> y ábrelo. En Ubuntu puedes usar la consola de la VM o entrar desde Windows mediante SSH, que permite manejar el servidor a distancia.</p>
+<ul>
+<li>Copia cada bloque de comandos completo, pégalo y pulsa <strong>Enter</strong>. Espera a que vuelva a aparecer la línea donde puedes escribir.</li>
+<li>No copies los símbolos de las cercas de código ni los nombres <code>bash</code> o <code>powershell</code>.</li>
+<li>Si aparece una contraseña, escríbela y pulsa Enter. En Linux <strong>no aparecen puntos ni asteriscos</strong> mientras escribes: es normal.</li>
+<li><code>sudo</code> pide ejecutar una orden como administrador. La contraseña es la del usuario de Ubuntu, no la contraseña de PostgreSQL.</li>
+<li><code>cd</code> entra a una carpeta; <code>ls</code> muestra su contenido.</li>
+<li>Para salir de una vista de registros que se actualiza, pulsa <strong>Ctrl+C</strong>. Para salir de <code>less</code>, pulsa <strong>q</strong>.</li>
+<li>Si un paso muestra un error, resuélvelo antes de continuar. No repitas todos los pasos desde el principio.</li>
+</ul>
+<p><strong>Cómo editar con nano:</strong> abre el archivo con el comando indicado; usa las flechas; pega o modifica el texto. Guarda con <strong>Ctrl+O</strong>, confirma con <strong>Enter</strong> y sal con <strong>Ctrl+X</strong>. En YAML usa espacios, no la tecla Tab.</p>
+<p>Los textos <code>TU_USUARIO_WEB</code>, <code>TU_USUARIO_DATOS</code>, <code>INTERFAZ_REAL</code>, <code>PUERTA_DE_ENLACE_REAL</code> y <code>DNS_REAL</code> son marcadores. Debes reemplazarlos. No son cuentas ni direcciones que ya existan.</p>
+<h2 id="paso-2">2 Qué se instalará y qué está confirmado</h2>
+<pre><code class="language-text">Navegador del estudiante
+        |
+        | HTTP puerto 80
+        v
+WEB 10.10.10.13 Ubuntu Server 26.04
+  Docker
+    web  Nginx sirve el frontend React ya compilado
+      |
+      | /api/ y WebSocket
+      v
+    api  FastAPI con Python 3.12 y Uvicorn
+      |                              |
+      | PostgreSQL TLS puerto 5432   | Redis puerto 6379
+      v                              v
+DATOS 10.10.10.14
+  PostgreSQL 16                      Redis 7
+  base cociber_ctf                   base lógica 0
+  cuenta cociber_app                 cuenta cociber_app
+</code></pre>
+<p><strong>Docker</strong> ejecuta cada parte de la aplicación en un entorno preparado llamado contenedor. No necesitas instalar manualmente todas las bibliotecas en Ubuntu: los Dockerfile del proyecto las instalan al construir las imágenes.</p>
+<table>
+<thead>
+<tr>
+<th>Parte</th>
+<th>Dependencias reales del proyecto</th>
+<th>Cómo se instalan</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Backend</td>
+<td>Python 3.12, FastAPI, Uvicorn, SQLAlchemy, asyncpg, pydantic-settings, PyJWT, Argon2, Redis, multipart, email-validator, Paramiko, cryptography y websockets</td>
+<td><code>backend/Dockerfile</code> instala <code>backend/requirements.txt</code></td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>Node.js 22 para compilar; React 18, Vite 5, TypeScript 5, Tailwind, PostCSS y Autoprefixer</td>
+<td><code>frontend/Dockerfile</code> ejecuta <code>npm ci</code> y <code>npm run build</code></td>
+</tr>
+<tr>
+<td>Servidor HTTP</td>
+<td>Nginx, actualmente imagen <code>nginx:1.27-alpine</code> del proyecto</td>
+<td>Etapa final del Dockerfile del frontend</td>
+</tr>
+<tr>
+<td>Ubuntu</td>
+<td>Docker Engine, complemento Compose, SSH, herramientas de red y Python para el asistente de configuración</td>
+<td>Se instalan en los pasos siguientes</td>
+</tr>
+</tbody></table>
+<p>Se conserva Python 3.12 porque es la versión del proyecto. El Python predeterminado de Ubuntu 26.04 es 3.14; no lo vamos a sustituir. Docker admite Ubuntu 26.04. Referencias: <a href="https://documentation.ubuntu.com/release-notes/26.04/summary-for-lts-users/">Ubuntu 26.04</a> y <a href="https://docs.docker.com/engine/install/ubuntu/">Docker en Ubuntu</a>.</p>
+<p>El archivo Compose original crea <strong>cuatro servicios</strong>, incluidas bases locales. Esta guía entrega un archivo <strong>independiente</strong>, <code>compose.web.yml</code>, que crea únicamente <code>api</code> y <code>web</code>. Por eso todos los comandos del servidor nuevo incluyen <code>-f compose.web.yml</code>.</p>
+<h3>Información recuperada del proyecto</h3>
+<ul>
+<li>Carpeta activa: <code>C:\Users\HP\Documents\Codex\Proyecto_CTF_Fase5_Laboratorio_Ranking_Top10\ctf_project</code>.</li>
+<li>Hay cambios locales recientes del reloj y del trabajo mediante Kali. La copia de código indicada aquí los incluye; clonar solamente GitHub podría dejarlos fuera.</li>
+<li>Las guías actuales de bases están en <code>C:\Users\HP\Documents\Codex\cociber-ctf-deploy</code>.</li>
+<li>La cuenta <code>cociberctf</code> es administrativa. La plataforma se conecta con <strong><code>cociber_app</code></strong>, que tiene permisos de ejecución.</li>
+<li><code>cociber_app</code> y su contraseña <strong>no son un usuario y contraseña para entrar a la página web</strong>.</li>
+<li>El esquema actual tiene 19 tablas. La guía existente de bases coincide con los modelos actuales inspeccionados.</li>
+<li>Operación Cóndor en <code>10.10.30.20</code> es otra aplicación. No se instala en el servidor principal mediante esta guía.</li>
+</ul>
+<h2 id="paso-3">3 Lo que debes tener antes de comenzar</h2>
+<p>Anota o confirma estos datos con quien administra la red:</p>
+<table>
+<thead>
+<tr>
+<th>Dato</th>
+<th>Valor o acción</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>IP del servidor web</td>
+<td><code>10.10.10.13/24</code>; equivale a máscara <code>255.255.255.0</code></td>
+</tr>
+<tr>
+<td>IP de bases</td>
+<td><code>10.10.10.14</code></td>
+</tr>
+<tr>
+<td>Usuario de Ubuntu WEB</td>
+<td>El creado al instalar Ubuntu; debe poder usar <code>sudo</code></td>
+</tr>
+<tr>
+<td>Usuario de Ubuntu DATOS</td>
+<td>Cuenta para entrar a la VM de bases mediante SSH</td>
+</tr>
+<tr>
+<td>Puerta de enlace</td>
+<td>Confirmar; <strong>no se deduce</strong> que sea <code>10.10.10.1</code></td>
+</tr>
+<tr>
+<td>DNS</td>
+<td>Confirmar los servidores DNS de tu red</td>
+</tr>
+<tr>
+<td>Red de la VM</td>
+<td>La tarjeta debe conectarse a la red/VLAN que contiene <code>10.10.10.0/24</code></td>
+</tr>
+<tr>
+<td>Acceso a Internet de WEB</td>
+<td>Necesario para descargar paquetes e imágenes durante la instalación</td>
+</tr>
+<tr>
+<td>Archivo privado de bases</td>
+<td><code>application-db.env</code>, generado con la guía de bases</td>
+</tr>
+<tr>
+<td>Configuración anterior</td>
+<td><code>.env</code> de la plataforma actual, para conservar sus secretos e integraciones</td>
+</tr>
+</tbody></table>
+<p>Como punto inicial para el servidor web puedes asignar <strong>4 vCPU, 8 GB de RAM y 40 GB de disco</strong>, ajustándolo después según el uso. Es una propuesta para comenzar, no una capacidad probada para un número determinado de alumnos.</p>
+<p>Esta guía comienza con Ubuntu Server instalado. Si la VM ya tiene servicios, no reinstales ni formatees discos. Si es nueva, instala Ubuntu Server 26.04 desde la ISO oficial, crea un usuario administrativo y activa <strong>OpenSSH server</strong> durante el instalador. La VM de DATOS se conserva.</p>
+<p><strong>Antes del cambio definitivo</strong>, cierra las sesiones de laboratorio, conserva un respaldo de PostgreSQL y guarda la configuración privada anterior. No deben quedar dos API ejecutando tareas de limpieza sobre la misma base durante el cambio.</p>
+<h2 id="paso-4">4 Confirmar y configurar la dirección del servidor WEB</h2>
+<p><strong>Dónde: consola de la VM WEB.</strong> Para cambiar la red es preferible la consola del hipervisor, porque no depende de SSH.</p>
+<pre><code class="language-bash">cat /etc/os-release
+hostname
+ip -br address
+ip route
+resolvectl status
+</code></pre>
+<p>Debe aparecer Ubuntu 26.04. Identifica la tarjeta de red: puede llamarse <code>ens18</code>, <code>ens160</code> o <code>enp1s0</code>. <strong>No cambies su nombre por adivinación.</strong> Si ya ves <code>10.10.10.13/24</code> en la tarjeta correcta y tienes conectividad, no vuelvas a configurar la IP.</p>
+<p>Si todavía falta la dirección fija:</p>
+<pre><code class="language-bash">sudo cp -a /etc/netplan /root/netplan-respaldo-ctf
+ls -l /etc/netplan
+sudo netplan get
+</code></pre>
+<p>La copia guarda la configuración anterior. Abre con nano el archivo YAML existente que contiene tu tarjeta. Por ejemplo, <strong>solo si ese es su nombre</strong>:</p>
+<pre><code class="language-bash">sudo nano /etc/netplan/50-cloud-init.yaml
+</code></pre>
+<p>Modifica la sección de esa tarjeta. No borres otras interfaces. Para una VM con <strong>una sola tarjeta</strong>, la estructura sería esta; reemplaza los tres marcadores antes de guardar:</p>
+<pre><code class="language-yaml">network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    INTERFAZ_REAL:
+      dhcp4: false
+      addresses:
+        - 10.10.10.13/24
+      routes:
+        - to: default
+          via: PUERTA_DE_ENLACE_REAL
+      nameservers:
+        addresses:
+          - DNS_REAL
+</code></pre>
+<p>Si tienes <strong>dos tarjetas</strong>, una para Internet y otra para el laboratorio, normalmente debes conservar la ruta por defecto y el DNS en la tarjeta de Internet. La tarjeta del laboratorio puede llevar solamente <code>dhcp4: false</code> y <code>addresses: [10.10.10.13/24]</code>. No agregues una segunda ruta por defecto sin revisar la topología.</p>
+<p>Si el archivo advierte que lo genera <code>cloud-init</code>, confirma con el administrador del hipervisor cuál es la configuración de red persistente de esa VM antes de dar por terminado el cambio.</p>
+<p>Aplica permisos al archivo que editaste y verifica la sintaxis; reemplaza el nombre si era diferente:</p>
+<pre><code class="language-bash">sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+sudo netplan generate
+sudo netplan try --timeout 120
+</code></pre>
+<p>Si <code>generate</code> muestra error, corrige el YAML y no continúes. Durante <code>try</code>, comprueba desde otra consola que tienes acceso y confirma con Enter. Si pierdes acceso, espera el plazo y revisa la reversión desde la consola. Comprueba el archivo en disco antes de reiniciar: Netplan advierte que hay situaciones en las que la reversión debe verificarse. <a href="https://netplan.readthedocs.io/en/stable/netplan-try/">Referencia Netplan</a>.</p>
+<pre><code class="language-bash">ip -br address
+ip route get 10.10.10.14
+ping -c 3 10.10.10.14
+getent hosts download.docker.com
+</code></pre>
+<p><strong>Resultado esperado:</strong> dirección <code>.13/24</code>, ruta hacia <code>.14</code> con origen <code>.13</code>, y resolución del nombre de Docker. Un ping puede estar bloqueado; las pruebas de puertos del paso 6 son más concluyentes.</p>
+<h2 id="paso-5">5 Entrar por SSH y preparar Ubuntu</h2>
+<p><strong>Dónde: WEB, inicialmente por consola.</strong></p>
+<pre><code class="language-bash">sudo apt update
+sudo apt install -y openssh-server ca-certificates curl nano tar unzip netcat-openbsd python3 python3-dotenv
+sudo systemctl enable --now ssh
+sudo systemctl status ssh --no-pager
+</code></pre>
+<p><strong>Dónde: WINDOWS, PowerShell.</strong> Sustituye <code>TU_USUARIO_WEB</code> por tu cuenta de Ubuntu:</p>
+<pre><code class="language-powershell">ssh TU_USUARIO_WEB@10.10.10.13
+</code></pre>
+<p>En la primera conexión verifica que estás entrando a la VM correcta y acepta su huella SSH. Después escribe la contraseña de Ubuntu. A partir de ahora esa ventana opera en <strong>WEB</strong>, aunque la hayas abierto desde Windows. Puedes abrir otra pestaña de PowerShell para ejecutar pasos de WINDOWS.</p>
+<p>En WEB:</p>
+<pre><code class="language-bash">sudo apt upgrade -y
+timedatectl
+df -h /
+free -h
+</code></pre>
+<p>Comprueba que la hora sea correcta: los tokens de sesión dependen de ella. Si Ubuntu indica que debes reiniciar, ejecuta <code>sudo reboot</code>, espera a que vuelva a iniciar y entra de nuevo por SSH. Hazlo durante la preparación, antes de dar servicio a estudiantes.</p>
+<h2 id="paso-6">6 Comprobar que la VM de DATOS está preparada</h2>
+<p><strong>Dónde: WEB.</strong></p>
+<pre><code class="language-bash">nc -vz -w 5 10.10.10.14 5432
+nc -vz -w 5 10.10.10.14 6379
+</code></pre>
+<p>Ambos deben indicar conexión exitosa, normalmente <code>succeeded</code>. Esta prueba solo comprueba el puerto; más adelante verificaremos autenticación y tablas.</p>
+<p>Si falla, revisa <strong>en DATOS</strong>, no en WEB:</p>
+<pre><code class="language-bash">sudo pg_lsclusters
+sudo systemctl status postgresql@16-main --no-pager
+sudo systemctl status cociber-redis --no-pager
+sudo ss -lntp
+sudo ufw status verbose
+</code></pre>
+<p><code>cociber-redis</code> es el nombre utilizado por tus guías actuales. Si se instaló Redis mediante el paquete de Ubuntu, su servicio puede llamarse <code>redis-server</code>. No instales un segundo Redis para corregir un nombre de servicio.</p>
+<p>Si el firewall de DATOS está activo y falta el permiso de WEB, estas son las reglas acotadas a la aplicación:</p>
+<pre><code class="language-bash">sudo ufw allow from 10.10.10.13 to 10.10.10.14 port 5432 proto tcp comment &#39;Cociber WEB PostgreSQL&#39;
+sudo ufw allow from 10.10.10.13 to 10.10.10.14 port 6379 proto tcp comment &#39;Cociber WEB Redis&#39;
+</code></pre>
+<p>Además, PostgreSQL debe escuchar en <code>.14</code>, tener TLS habilitado y permitir a <code>cociber_app</code> desde <code>.13/32</code> mediante <code>pg_hba.conf</code>; Redis debe escuchar en <code>.14</code> y tener creada su cuenta ACL <code>cociber_app</code>. Las reglas del firewall por sí solas no crean esas cuentas ni habilitan los motores.</p>
+<p><strong>Comprueba el destino antes de conectar la plataforma. En DATOS:</strong></p>
+<pre><code class="language-bash">sudo -u postgres psql -X -d cociber_ctf -c &quot;SELECT count(*) AS tablas FROM pg_tables WHERE schemaname=&#39;public&#39;;&quot;
+sudo -u postgres psql -X -d cociber_ctf -c &quot;SELECT rolname, rolsuper FROM pg_roles WHERE rolname IN (&#39;cociberctf&#39;,&#39;cociber_app&#39;);&quot;
+sudo -u postgres psql -X -d cociber_ctf -c &quot;SELECT count(*) AS usuarios FROM users;&quot;
+</code></pre>
+<p>Se esperan 19 tablas para esta versión, <code>cociber_app</code> sin superusuario y tus usuarios si restauraste la base anterior. Si <code>users</code> no existe o la base está vacía cuando esperabas datos, termina primero la <a href="https://github.com/lavillamarin3-hash/cociber-ctf-deploy/blob/main/docs/05_APLICACION_Y_MIGRACION.md">guía de aplicación y migración de bases</a>.</p>
+<p><strong>No importes nuevamente el esquema sobre una base con datos.</strong> Esta guía mantiene <code>MANAGE_SCHEMA_ON_STARTUP=false</code>, por lo que arrancar el backend no creará ni actualizará tablas.</p>
+<h2 id="paso-7">7 Instalar Docker en WEB</h2>
+<p><strong>Dónde: WEB.</strong> Primero mira si ya existe:</p>
+<pre><code class="language-bash">sudo docker version
+sudo docker compose version
+</code></pre>
+<p>Si ambos funcionan y ya instalaste Docker desde el repositorio oficial, conserva esa instalación. Si indica <code>command not found</code> y el servidor es nuevo, sigue estos bloques. Si hay contenedores o una instalación de otra procedencia, revisa su estado antes de reemplazar paquetes.</p>
+<pre><code class="language-bash">sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+</code></pre>
+<pre><code class="language-bash">sudo tee /etc/apt/sources.list.d/docker.sources &gt; /dev/null &lt;&lt;EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release &amp;&amp; echo &quot;${UBUNTU_CODENAME:-$VERSION_CODENAME}&quot;)
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+</code></pre>
+<pre><code class="language-bash">sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+sudo docker run --rm hello-world
+sudo docker compose version
+</code></pre>
+<p><strong>Resultado esperado:</strong> <code>Hello from Docker!</code> y una versión de Compose. Usa <code>sudo docker</code> en toda la guía. No es necesario añadir tu cuenta al grupo Docker.</p>
+<p>La sintaxis oficial puede actualizarse; se verificó para Ubuntu 26.04 en <a href="https://docs.docker.com/engine/install/ubuntu/">Docker Engine para Ubuntu</a>.</p>
+<h2 id="paso-8">8 Copiar el código actual desde Windows</h2>
+<p>Usaremos una copia de <code>backend</code> y <code>frontend</code> de tu carpeta real. No se copiarán las bases locales ni los archivos de contraseñas dentro del paquete de código.</p>
+<p><strong>Dónde: WINDOWS, en una pestaña PowerShell que no esté dentro de SSH.</strong></p>
+<pre><code class="language-powershell">$proyectoCTF = &#39;C:\Users\HP\Documents\Codex\Proyecto_CTF_Fase5_Laboratorio_Ranking_Top10\ctf_project&#39;
+$trabajoCTF = &#39;C:\Users\HP\Documents\Codex\2026-10-22\c-users-hp-documents-codex-proyecto-2\work\transferencia&#39;
+New-Item -ItemType Directory -Force -Path $trabajoCTF | Out-Null
+tar.exe -czf &quot;$trabajoCTF\ctf-codigo.tar.gz&quot; --exclude=node_modules --exclude=dist --exclude=.env --exclude=&#39;.env.*&#39; --exclude=.venv --exclude=venv --exclude=__pycache__ --exclude=&#39;*.pyc&#39; --exclude=.git --exclude=work --exclude=outputs -C $proyectoCTF backend frontend
+</code></pre>
+<p>Comprueba que el paquete existe y guarda su huella. Una huella SHA-256 permite comprobar que el archivo no cambió durante la copia:</p>
+<pre><code class="language-powershell">Get-Item &quot;$trabajoCTF\ctf-codigo.tar.gz&quot;
+Get-FileHash &quot;$trabajoCTF\ctf-codigo.tar.gz&quot; -Algorithm SHA256
+tar.exe -tzf &quot;$trabajoCTF\ctf-codigo.tar.gz&quot; | Select-String -Pattern &#39;(^|/)\.env($|\.)|node_modules/|\.venv/&#39;
+</code></pre>
+<p>La última orden <strong>no debe mostrar coincidencias</strong>. Si aparecen archivos <code>.env</code>, no transfieras el paquete: corrige las exclusiones primero. Guarda el resultado SHA-256 para compararlo después.</p>
+<p>Copia código y plantillas; reemplaza <code>TU_USUARIO_WEB</code> en ambas líneas:</p>
+<pre><code class="language-powershell">scp &quot;$trabajoCTF\ctf-codigo.tar.gz&quot; TU_USUARIO_WEB@10.10.10.13:~/ctf-codigo.tar.gz
+scp &#39;C:\Users\HP\Documents\Codex\2026-10-22\c-users-hp-documents-codex-proyecto-2\outputs\Plantillas_Despliegue_Web_CTF.zip&#39; TU_USUARIO_WEB@10.10.10.13:~/plantillas-web.zip
+</code></pre>
+<p>Si vas a <strong>conservar la plataforma anterior</strong>, copia su configuración privada por separado:</p>
+<pre><code class="language-powershell">scp &quot;$proyectoCTF\.env&quot; TU_USUARIO_WEB@10.10.10.13:~/ctf-original.env
+</code></pre>
+<p>Ese archivo contiene secretos. No lo pegues en un chat, ni lo agregues al paquete público ni al repositorio.</p>
+<p><strong>Dónde: WEB.</strong></p>
+<pre><code class="language-bash">sha256sum ~/ctf-codigo.tar.gz
+ls -ld /opt/ctf
+</code></pre>
+<p>La huella debe coincidir con Windows. Si <code>/opt/ctf</code> no existe, es normal. Si ya existe una instalación allí, no la sobrescribas: usa el procedimiento de actualización del paso 17.</p>
+<p>Para una carpeta nueva:</p>
+<pre><code class="language-bash">sudo install -d -m 0755 /opt/ctf
+sudo tar --no-same-owner -xzf ~/ctf-codigo.tar.gz -C /opt/ctf
+sudo install -d -m 0755 /opt/ctf/deploy
+sudo unzip ~/plantillas-web.zip -d /opt/ctf/deploy
+sudo chmod 0755 /opt/ctf/deploy
+sudo chmod 0644 /opt/ctf/deploy/*.py /opt/ctf/deploy/compose.web.yml
+sudo install -m 0644 /opt/ctf/deploy/compose.web.yml /opt/ctf/compose.web.yml
+ls -l /opt/ctf
+</code></pre>
+<p>Debes ver <code>backend</code>, <code>frontend</code>, <code>deploy</code> y <code>compose.web.yml</code>. Si copiaste el entorno anterior:</p>
+<pre><code class="language-bash">chmod 600 ~/ctf-original.env
+</code></pre>
+<h2 id="paso-9">9 Obtener el archivo privado de conexión a las bases</h2>
+<p><strong>Dónde: DATOS.</strong> Entra a su consola o por SSH. Estos comandos se basan en el repositorio de despliegue ya preparado:</p>
+<pre><code class="language-bash">cd /opt/cociber-ctf-deploy
+sudo test -f /etc/cociber-ctf/application-db.env &amp;&amp; echo &#39;El archivo de conexión ya existe&#39;
+</code></pre>
+<p>Si el archivo ya existe, úsalo. Si <strong>no existe</strong>, créalo:</p>
+<pre><code class="language-bash">sudo python3 tools/write_application_env.py --secrets-file /etc/cociber-ctf/deploy-secrets.env --output /etc/cociber-ctf/application-db.env
+</code></pre>
+<p>Este programa utiliza las contraseñas de ejecución configuradas en la VM de datos y codifica sus caracteres especiales. No cambia contraseñas ni crea usuarios. Si faltan <code>PG_APP_PASSWORD</code> o <code>REDIS_APP_PASSWORD</code>, termina el aprovisionamiento de las cuentas <code>cociber_app</code> con la guía de bases. No sustituyas esas cuentas por el superusuario.</p>
+<p>Deja una copia temporal privada para transferir por SSH. Ejecuta desde tu usuario normal de Ubuntu DATOS, sin entrar primero a una consola <code>sudo -i</code>:</p>
+<pre><code class="language-bash">sudo install -m 0600 -o &quot;$USER&quot; -g &quot;$(id -gn)&quot; /etc/cociber-ctf/application-db.env &quot;$HOME/application-db.env&quot;
+</code></pre>
+<p><strong>Dónde: WEB.</strong> Reemplaza <code>TU_USUARIO_DATOS</code>:</p>
+<pre><code class="language-bash">scp TU_USUARIO_DATOS@10.10.10.14:~/application-db.env ~/application-db.env
+chmod 600 ~/application-db.env
+</code></pre>
+<p>Si el firewall de DATOS no permite SSH desde WEB, transfiere ese archivo desde tu equipo administrativo usando <code>scp</code> en dos pasos, sin abrir el puerto a toda la red.</p>
+<p>El archivo debe contener las conexiones a <code>10.10.10.14</code>, base <code>cociber_ctf</code>, cuenta <code>cociber_app</code>, PostgreSQL con <code>ssl=require</code> y Redis base <code>0</code>. No hay que escribir las contraseñas a mano ni mostrarlas en pantalla.</p>
+<h2 id="paso-10">10 Crear la configuración privada de la plataforma</h2>
+<p><strong>Dónde: WEB.</strong></p>
+<pre><code class="language-bash">sudo install -d -m 0700 /etc/cociber-ctf
+</code></pre>
+<p>Elige <strong>solo una</strong> de estas dos opciones.</p>
+<h3>Opción A Conservar usuarios retos y configuración anteriores</h3>
+<p>Es la opción adecuada para trasladar tu plataforma actual. La VM de datos debe contener la base restaurada o preparada con tus datos.</p>
+<pre><code class="language-bash">sudo python3 /opt/ctf/deploy/preparar_entorno.py --base &quot;$HOME/ctf-original.env&quot; --database &quot;$HOME/application-db.env&quot; --output /etc/cociber-ctf/web.env
+</code></pre>
+<p>El asistente conserva <code>JWT_SECRET</code>, <code>FIELD_HMAC_SECRET</code> y la configuración de Guacamole/SSH; reemplaza las conexiones de datos y configura <code>PUBLIC_ORIGIN=http://10.10.10.13</code>. Esto evita perder los secretos de la instalación anterior.</p>
+<h3>Opción B Instalación completamente nueva</h3>
+<p>Úsala únicamente si no estás conservando usuarios, retos, puntuaciones ni secretos previos. Deben existir las 19 tablas vacías y los roles en DATOS:</p>
+<pre><code class="language-bash">sudo python3 /opt/ctf/deploy/preparar_entorno.py --nuevo --database &quot;$HOME/application-db.env&quot; --output /etc/cociber-ctf/web.env
+</code></pre>
+<p>Genera secretos nuevos, deja Guacamole en modo simulado y el inyector desactivado. Permite preparar el portal; <strong>todavía no habilita laboratorios reales</strong>. El administrador web inicial se crea en el paso 13.</p>
+<h3>Comprobar el resultado</h3>
+<pre><code class="language-bash">sudo stat -c &#39;%a %U %n&#39; /etc/cociber-ctf/web.env
+</code></pre>
+<p>Debe mostrar <code>600 root</code> y la ruta. No uses <code>cat</code> para publicar su contenido. El asistente se niega a reemplazar un archivo que ya exista. Para corregirlo, conserva una copia privada y edita el archivo con:</p>
+<pre><code class="language-bash">sudo cp -a /etc/cociber-ctf/web.env /etc/cociber-ctf/web.env.respaldo
+sudo nano /etc/cociber-ctf/web.env
+</code></pre>
+<p>Los valores <code>MANAGE_SCHEMA_ON_STARTUP=&#39;false&#39;</code> y <code>CTF_SEED_DEMO_DATA=&#39;false&#39;</code> deben permanecer así. El backend no debe modificar automáticamente el esquema ni introducir datos de demostración.</p>
+<p>PostgreSQL utiliza TLS con <code>ssl=require</code>: cifra el transporte, pero no verifica la identidad del servidor. Redis usa autenticación en la red privada. Esta configuración corresponde al laboratorio restringido documentado. Si se usa una red no confiable, configura CA y verificación completa para PostgreSQL y TLS en Redis antes de usarla; el asistente suministrado está limitado deliberadamente a la configuración de laboratorio existente.</p>
+<h2 id="paso-11">11 Revisar Guacamole y las rutas hacia los laboratorios</h2>
+<p>Si conservaste el entorno anterior, revisa sus direcciones con <code>sudo nano /etc/cociber-ctf/web.env</code>. La configuración inspeccionada todavía contiene referencias a la antigua red <code>192.168.146.0/24</code>. Que la web cambie a <code>.13</code> <strong>no cambia automáticamente</strong> la dirección de Guacamole, de Kali ni de las víctimas.</p>
+<table>
+<thead>
+<tr>
+<th>Elemento</th>
+<th>Qué verificar</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GUACAMOLE_MODE</code></td>
+<td><code>real</code> para tu integración existente; <code>stub</code> solo simula</td>
+</tr>
+<tr>
+<td><code>GUACAMOLE_BASE_URL</code> y <code>GUACAMOLE_API_URL</code> si existe</td>
+<td>Dirección real alcanzable desde WEB; no escribir <code>localhost</code> para una VM distinta</td>
+</tr>
+<tr>
+<td>Cuenta de servicio Guacamole</td>
+<td>Conservar credenciales válidas, privadas</td>
+</tr>
+<tr>
+<td><code>FLAG_INJECTOR_ENABLED</code></td>
+<td>Activar solo con la infraestructura SSH del laboratorio ya preparada</td>
+</tr>
+<tr>
+<td>Inventario de VM en la plataforma</td>
+<td>Actualizar las IP y conexiones de Guacamole desde Administración si cambió la topología</td>
+</tr>
+<tr>
+<td>Red</td>
+<td>WEB debe llegar a DATOS, a Guacamole y a los servicios autorizados de las VM</td>
+</tr>
+</tbody></table>
+<p>No cambies las IP antiguas por direcciones inventadas. La IP nueva de Guacamole y de Kali no queda confirmada por el dato <code>10.10.10.13</code>.</p>
+<p>Si se utilizan claves SSH en archivos, estos deben existir <strong>dentro del contenedor</strong>. Las rutas de Windows no sirven en Linux. Crea un directorio privado en WEB, copia únicamente la clave del servicio y su archivo <code>known_hosts</code> verificado, y aplica:</p>
+<pre><code class="language-bash">sudo install -d -m 0700 /etc/cociber-ctf/ssh
+</code></pre>
+<p>Después de colocar los archivos con nombres <code>id_ed25519</code> y <code>known_hosts</code>:</p>
+<pre><code class="language-bash">sudo chown -R 10001:10001 /etc/cociber-ctf/ssh
+sudo chmod 700 /etc/cociber-ctf/ssh
+sudo chmod 600 /etc/cociber-ctf/ssh/id_ed25519 /etc/cociber-ctf/ssh/known_hosts
+sudo nano /opt/ctf/compose.web.yml
+</code></pre>
+<p>Añade <strong>dentro de <code>volumes</code> del servicio <code>api</code></strong>, conservando las otras líneas:</p>
+<pre><code class="language-yaml">      - /etc/cociber-ctf/ssh:/run/ctf-ssh:ro
+</code></pre>
+<p>Y configura estas rutas en <code>web.env</code>:</p>
+<pre><code class="language-dotenv">FLAG_INJECTOR_SSH_PRIVATE_KEY=&#39;/run/ctf-ssh/id_ed25519&#39;
+FLAG_INJECTOR_KNOWN_HOSTS=&#39;/run/ctf-ssh/known_hosts&#39;
+FLAG_INJECTOR_STRICT_HOST_KEY=&#39;true&#39;
+</code></pre>
+<p>El UID <code>10001</code> es el usuario del backend en su Dockerfile. La huella del servidor SSH debe confirmarse por un canal administrativo antes de incorporarla a <code>known_hosts</code>. Si tu instalación usa contraseña SSH, no crees una clave vacía ni añadas ese montaje: conserva el método real y sus credenciales privadas.</p>
+<p>La plataforma puede abrir aunque la terminal no funcione. La aceptación del laboratorio se comprueba por separado en el paso 15.</p>
+<h2 id="paso-12">12 Construir backend y frontend</h2>
+<p><strong>Dónde: WEB.</strong></p>
+<pre><code class="language-bash">cd /opt/ctf
+sudo docker compose -f compose.web.yml config --quiet
+sudo docker compose -f compose.web.yml config --services
+</code></pre>
+<p>La primera orden termina sin texto si la configuración es válida. La segunda debe mostrar únicamente:</p>
+<pre><code class="language-text">api
+web
+</code></pre>
+<p>Si aparecen <code>postgres</code> o <code>redis</code>, estás usando el archivo incorrecto. No continúes. Evita ejecutar <code>docker compose config</code> sin <code>--quiet</code>: puede mostrar secretos resueltos.</p>
+<p>Ahora construye las imágenes:</p>
+<pre><code class="language-bash">sudo docker compose -f compose.web.yml build
+</code></pre>
+<p>Puede tardar varios minutos. Durante el proceso se descargan Python 3.12, Node 22 y Nginx, se instalan las dependencias y se compila React. Espera a que termine sin errores. No cierres la terminal mientras construye.</p>
+<p>Comprueba las herramientas instaladas en la imagen del backend:</p>
+<pre><code class="language-bash">sudo docker compose -f compose.web.yml run --rm --no-deps api python --version
+sudo docker compose -f compose.web.yml run --rm --no-deps api python -m pip check
+</code></pre>
+<p>Debes ver Python <code>3.12.x</code> y ninguna dependencia rota. Node es una herramienta de construcción y no necesita permanecer en el contenedor final de Nginx. La configuración Nginx se verifica después de iniciar la API, para que pueda resolver el nombre interno <code>api</code>.</p>
+<h2 id="paso-13">13 Probar las bases y preparar el acceso inicial</h2>
+<p><strong>Dónde: WEB.</strong> Aún no es necesario iniciar permanentemente la API:</p>
+<pre><code class="language-bash">cd /opt/ctf
+sudo docker compose -f compose.web.yml run --rm --no-deps api python /opt/ctf-deploy/verificar_servicios.py
+</code></pre>
+<p>La prueba suministrada realiza consultas de lectura. Comprueba PostgreSQL, TLS, la cuenta de ejecución, las tablas y columnas esperadas y un <code>PING</code> autenticado a Redis. También informa cuántos usuarios y administradores existen. No imprime contraseñas ni URLs privadas.</p>
+<p><strong>Debes obtener conexiones correctas y ningún faltante de esquema.</strong> Tener el puerto abierto no basta. Si hay tablas o columnas faltantes, vuelve a la guía de bases y resuelve la migración con el administrador. No cambies <code>MANAGE_SCHEMA_ON_STARTUP</code> para saltarte el problema.</p>
+<p>Si restauraste una instalación, entra después con su usuario web administrador existente. Si el verificador muestra cero usuarios y elegiste la instalación nueva, crea el administrador inicial:</p>
+<pre><code class="language-bash">sudo docker compose -f compose.web.yml run --rm --no-deps api python /opt/ctf-deploy/crear_admin_inicial.py
+</code></pre>
+<p>No añadas <code>-T</code>: este asistente necesita una terminal interactiva. Te pedirá un nombre de usuario y una contraseña de al menos 16 caracteres, que debes confirmar. Escribe <code>CREAR</code> cuando quieras guardarlo.</p>
+<p>El asistente solo admite una base sin usuarios y con el rol <code>admin</code> ya creado. Si encuentra usuarios, se detiene para no duplicar ni modificar cuentas. Crea un usuario de la <strong>plataforma</strong>, no una cuenta de Ubuntu ni de PostgreSQL. No crea automáticamente su cuenta en Guacamole.</p>
+<p>Si había usuarios pero ya no tienes acceso administrativo, no borres <code>users</code> ni ejecutes el asistente a la fuerza: recupera la cuenta con el responsable de la plataforma.</p>
+<h2 id="paso-14">14 Iniciar la plataforma</h2>
+<p>Antes de este paso, cierra los laboratorios activos en la instalación anterior. Si la API anterior apunta a la misma base, detenla antes de arrancar la nueva. <strong>Dónde: WINDOWS, solo si esa es tu instalación anterior administrada con Compose:</strong></p>
+<pre><code class="language-powershell">Set-Location &#39;C:\Users\HP\Documents\Codex\Proyecto_CTF_Fase5_Laboratorio_Ranking_Top10\ctf_project&#39;
+docker compose stop api web
+</code></pre>
+<p>Esto conserva los contenedores y datos anteriores para poder volver atrás. No uses <code>down -v</code>.</p>
+<p><strong>Dónde: WEB.</strong></p>
+<pre><code class="language-bash">cd /opt/ctf
+sudo docker compose -f compose.web.yml up -d
+sudo docker compose -f compose.web.yml ps
+sudo docker compose -f compose.web.yml logs --tail=80 api web
+sudo docker compose -f compose.web.yml exec web nginx -t
+</code></pre>
+<p><code>-d</code> significa que los servicios siguen funcionando aunque cierres SSH. Se espera <code>api</code> saludable, <code>web</code> iniciado y Nginx indicando <code>syntax is ok</code> / <code>test is successful</code>. El archivo incluye <code>restart: unless-stopped</code>, y Docker quedó habilitado para arrancar con Ubuntu.</p>
+<p>El puerto <code>8000</code> solo existe dentro de la red Docker; no se publica. Nginx recibe peticiones en <code>10.10.10.13:80</code> y las reenvía al servicio llamado <code>api</code>. No uses <code>npm run dev</code> ni Uvicorn con <code>--reload</code> para este despliegue.</p>
+<h2 id="paso-15">15 Comprobar la plataforma desde el navegador</h2>
+<p><strong>Dónde: WEB.</strong></p>
+<pre><code class="language-bash">curl -I http://10.10.10.13/
+curl --fail http://10.10.10.13/api/v1/health
+</code></pre>
+<p>La portada debe responder <code>200 OK</code> y la API:</p>
+<pre><code class="language-json">{&quot;status&quot;:&quot;ok&quot;,&quot;service&quot;:&quot;ctf-api&quot;}
+</code></pre>
+<p><strong>Ese endpoint solo verifica que la API responde.</strong> La prueba del paso 13 verifica las bases; ambas comprobaciones son necesarias.</p>
+<p><strong>Dónde: WINDOWS o un equipo autorizado de estudiantes.</strong> Abre Edge, Chrome o Firefox y escribe exactamente:</p>
+<pre><code class="language-text">http://10.10.10.13
+</code></pre>
+<p>No agregues <code>/24</code>. No uses <code>localhost</code>: eso apuntaría al equipo desde el que navegas.</p>
+<p>Comprueba en este orden:</p>
+<ol>
+<li>Aparece la pantalla de inicio de sesión.</li>
+<li>Entras con un usuario web real. Las credenciales de bases no sirven aquí.</li>
+<li>Como administrador ves usuarios, grupos, retos y ranking esperados.</li>
+<li>Como estudiante ves solamente los retos asignados a tu grupo.</li>
+<li>Al recargar una página interna, la aplicación sigue abriendo.</li>
+<li>El ranking se actualiza sin errores de WebSocket.</li>
+<li>En un reto ya preparado, inicia la sesión, abre la terminal integrada y verifica que funciona.</li>
+<li>Completa la prueba de validación del reto, cierra la sesión y comprueba la liberación del recurso y su limpieza según el procedimiento del laboratorio.</li>
+</ol>
+<p>Los puntos 7 y 8 requieren Guacamole y las VM de laboratorio operativas. Si solo aprueban los puntos 1 a 6, puedes registrar <strong>portal funcionando; integración de laboratorios pendiente</strong>. No presentes la instalación completa como aceptada todavía.</p>
+<p>Si migraste datos, compara con el origen los usuarios, retos publicados y puntos. En DATOS:</p>
+<pre><code class="language-bash">sudo -u postgres psql -X -d cociber_ctf -c &quot;SELECT count(*) AS usuarios FROM users;&quot;
+sudo -u postgres psql -X -d cociber_ctf -c &quot;SELECT count(*) AS retos_publicados FROM challenges WHERE is_published;&quot;
+sudo -u postgres psql -X -d cociber_ctf -c &quot;SELECT count(*) AS completados, coalesce(sum(awarded_points),0) AS puntos FROM challenge_completions;&quot;
+</code></pre>
+<p>Finalmente, en una ventana sin alumnos conectados, reinicia WEB y repite las comprobaciones:</p>
+<pre><code class="language-bash">sudo reboot
+</code></pre>
+<p>Vuelve a entrar por SSH, ejecuta <code>cd /opt/ctf</code>, <code>sudo docker compose -f compose.web.yml ps</code>, la prueba de servicios del paso 13 y la comprobación del navegador. DATOS también debe tener su arranque y montaje persistente verificados según su propia guía.</p>
+<h2 id="paso-16">16 Acceso de red y HTTPS</h2>
+<p>Este procedimiento publica <strong>HTTP en una red de laboratorio restringida</strong>. HTTP no cifra el acceso del navegador. Para alumnos en una red compartida o una publicación más amplia, completa HTTPS con un dominio o certificado de la autoridad interna antes de usar credenciales reales sobre ese acceso.</p>
+<p>No se ha confirmado un nombre DNS ni una autoridad de certificados para esta instalación. No solicites un certificado público para la IP privada <code>10.10.10.13</code>. Cuando se configure HTTPS, actualiza <code>PUBLIC_ORIGIN</code> a la URL exacta y haz que el proxy preserve WebSocket y el protocolo HTTPS. No basta con cambiar <code>http</code> por <code>https</code> en el navegador.</p>
+<p>Para la red, el administrador debe permitir:</p>
+<table>
+<thead>
+<tr>
+<th>Origen</th>
+<th>Destino</th>
+<th>Puerto</th>
+<th>Finalidad</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Equipo administrativo autorizado</td>
+<td>WEB <code>.13</code></td>
+<td>TCP 22</td>
+<td>SSH</td>
+</tr>
+<tr>
+<td>Red de estudiantes autorizada</td>
+<td>WEB <code>.13</code></td>
+<td>TCP 80 en esta fase</td>
+<td>Portal</td>
+</tr>
+<tr>
+<td>WEB <code>.13</code></td>
+<td>DATOS <code>.14</code></td>
+<td>TCP 5432 y 6379</td>
+<td>Bases</td>
+</tr>
+<tr>
+<td>WEB <code>.13</code></td>
+<td>Guacamole real</td>
+<td>El de su URL</td>
+<td>Terminal integrada</td>
+</tr>
+<tr>
+<td>WEB <code>.13</code></td>
+<td>VM de laboratorio autorizadas</td>
+<td>SSH configurado</td>
+<td>Preparación y limpieza cuando corresponda</td>
+</tr>
+</tbody></table>
+<p><strong>Los puertos publicados por Docker pueden saltarse las reglas habituales de UFW.</strong> Publicar solo en <code>10.10.10.13</code> limita la interfaz, pero no determina qué redes pueden llegar a ella. Usa las ACL del firewall de red o reglas compatibles con Docker para limitar el origen. No abras PostgreSQL, Redis ni el puerto API a los estudiantes. <a href="https://docs.docker.com/engine/install/ubuntu/">Referencia Docker</a>.</p>
+<h2 id="paso-17">17 Operación diaria actualizaciones y respaldo</h2>
+<p><strong>Dónde: WEB.</strong> Antes de cualquiera de estas órdenes:</p>
+<pre><code class="language-bash">cd /opt/ctf
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Necesidad</th>
+<th>Comando</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Ver estado</td>
+<td><code>sudo docker compose -f compose.web.yml ps</code></td>
+</tr>
+<tr>
+<td>Ver últimos errores del backend</td>
+<td><code>sudo docker compose -f compose.web.yml logs --tail=100 api</code></td>
+</tr>
+<tr>
+<td>Ver registros mientras llegan</td>
+<td><code>sudo docker compose -f compose.web.yml logs -f api web</code></td>
+</tr>
+<tr>
+<td>Reiniciar procesos sin cambios de configuración</td>
+<td><code>sudo docker compose -f compose.web.yml restart api web</code></td>
+</tr>
+<tr>
+<td>Detener la plataforma sin borrar nada</td>
+<td><code>sudo docker compose -f compose.web.yml stop</code></td>
+</tr>
+<tr>
+<td>Iniciarla de nuevo</td>
+<td><code>sudo docker compose -f compose.web.yml up -d</code></td>
+</tr>
+<tr>
+<td>Aplicar cambios en <code>web.env</code></td>
+<td><code>sudo docker compose -f compose.web.yml up -d --force-recreate api web</code></td>
+</tr>
+<tr>
+<td>Ver espacio utilizado</td>
+<td><code>df -h /</code> y <code>sudo docker system df</code></td>
+</tr>
+</tbody></table>
+<p><strong>Modificar <code>web.env</code> y ejecutar <code>restart</code> no recarga las variables en el contenedor.</strong> Usa el comando de recreación de la tabla.</p>
+<h3>Actualizar el código sin perder la copia anterior</h3>
+<p>Primero cierra las sesiones de laboratorio, conserva una copia de la base y programa un momento sin usuarios. Copia el nuevo paquete como <code>~/ctf-codigo-nuevo.tar.gz</code>.</p>
+<p>En WEB, guarda las imágenes que están funcionando y detén la aplicación:</p>
+<pre><code class="language-bash">cd /opt/ctf
+sudo docker image tag cociber-api:despliegue-20261022 cociber-api:anterior
+sudo docker image tag cociber-web:despliegue-20261022 cociber-web:anterior
+sudo docker compose -f compose.web.yml stop
+</code></pre>
+<p>Guarda el código y la configuración Compose antes de extraer. El nombre con fecha evita sobrescribir el respaldo anterior:</p>
+<pre><code class="language-bash">sudo install -d -m 0700 /var/backups/cociber-web
+sudo tar -czf &quot;/var/backups/cociber-web/codigo-$(date +%Y%m%d-%H%M%S).tar.gz&quot; -C /opt/ctf backend frontend deploy compose.web.yml
+sudo cp -a /etc/cociber-ctf &quot;/var/backups/cociber-web/config-$(date +%Y%m%d-%H%M%S)&quot;
+</code></pre>
+<p>Para evitar que queden archivos eliminados de versiones antiguas, prepara primero un directorio de versión nuevo; no mezcles a ciegas el paquete sobre la carpeta activa. La sustitución de directorios debe conservar la copia anterior, las rutas de <code>deploy</code>, el Compose y la configuración privada. Si no conoces ese procedimiento, realiza esta actualización acompañado por el responsable técnico; el despliegue inicial anterior no requiere esta operación.</p>
+<p>Después de colocar el código nuevo revisado:</p>
+<pre><code class="language-bash">sudo docker compose -f compose.web.yml build
+sudo docker compose -f compose.web.yml run --rm --no-deps api python /opt/ctf-deploy/verificar_servicios.py
+sudo docker compose -f compose.web.yml up -d
+</code></pre>
+<p>Si el cambio incluye migraciones de base, revísalas por separado antes de aplicarlas. Volver a una imagen antigua no revierte cambios de esquema ni datos.</p>
+<h3>Volver a la imagen anterior si la actualización falla</h3>
+<p>Solo si creaste las etiquetas <code>anterior</code> y no se modificó el esquema de forma incompatible:</p>
+<pre><code class="language-bash">sudo docker compose -f compose.web.yml stop
+sudo docker image tag cociber-api:anterior cociber-api:despliegue-20261022
+sudo docker image tag cociber-web:anterior cociber-web:despliegue-20261022
+sudo docker compose -f compose.web.yml up -d --no-build --force-recreate
+</code></pre>
+<p>Restaura también la configuración anterior si la cambiaste y comprueba el resultado. No uses <code>build</code> inmediatamente después: reemplazaría otra vez la imagen restaurada.</p>
+<h3>Qué respaldar</h3>
+<ul>
+<li><strong>En DATOS:</strong> PostgreSQL, configuración y credenciales, y la persistencia Redis mediante su guía. Una copia del código no contiene usuarios ni ranking.</li>
+<li><strong>En WEB:</strong> código, <code>compose.web.yml</code>, <code>/etc/cociber-ctf</code>, claves SSH y registro de las versiones de imágenes que aprobaste.</li>
+<li>Guarda los respaldos privados en otro almacenamiento protegido. Una copia en el mismo disco sirve para una corrección rápida, pero no para recuperarte si se pierde la VM.</li>
+<li>Conserva <code>FIELD_HMAC_SECRET</code> y <code>JWT_SECRET</code> junto con la copia de la instalación a la que pertenecen.</li>
+</ul>
+<p>Elimina las copias temporales de configuración cuando todo funcione y tengas el respaldo privado. <strong>En WEB</strong>, únicamente las copias temporales del paso 8 y 9:</p>
+<pre><code class="language-bash">rm -i ~/ctf-original.env ~/application-db.env
+</code></pre>
+<p>Si alguno no existe, el aviso es normal. <strong>En DATOS</strong>, elimina solamente la copia de transferencia de tu carpeta personal, no la de <code>/etc</code>:</p>
+<pre><code class="language-bash">rm -i ~/application-db.env
+</code></pre>
+<p>No uses <code>docker compose down -v</code>, <code>docker system prune --volumes</code>, <code>FLUSHDB</code>, <code>FLUSHALL</code> ni borrados de tablas como mantenimiento habitual.</p>
+<h2 id="paso-18">18 Solución de problemas</h2>
+<table>
+<thead>
+<tr>
+<th>Síntoma</th>
+<th>Qué significa o qué comprobar</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>no configuration file provided</code></td>
+<td>Estás en otra carpeta o falta <code>-f</code></td>
+<td><code>cd /opt/ctf</code> y usa <code>sudo docker compose -f compose.web.yml ...</code></td>
+</tr>
+<tr>
+<td><code>permission denied</code> con Docker</td>
+<td>Falta permiso para el servicio Docker</td>
+<td>Usa <code>sudo docker</code>; no cambies permisos del socket</td>
+</tr>
+<tr>
+<td><code>Cannot connect to the Docker daemon</code></td>
+<td>Docker no está iniciado</td>
+<td><code>sudo systemctl status docker --no-pager</code>; después <code>sudo systemctl start docker</code> si está detenido</td>
+</tr>
+<tr>
+<td><code>Cannot assign requested address</code></td>
+<td><code>.13</code> no existe en la tarjeta de WEB</td>
+<td>Revisa <code>ip -br address</code> y Netplan</td>
+</tr>
+<tr>
+<td><code>address already in use</code></td>
+<td>Otro servicio usa el puerto 80</td>
+<td><code>sudo ss -lntp</code>; identifica el servicio antes de detenerlo</td>
+</tr>
+<tr>
+<td>Falla la descarga de imágenes</td>
+<td>Internet, DNS, proxy o espacio</td>
+<td><code>getent hosts registry-1.docker.io</code>, <code>df -h /</code>; revisa la red</td>
+</tr>
+<tr>
+<td><code>npm ci</code> falla</td>
+<td>Error de descarga o incoherencia del lockfile</td>
+<td>Guarda el primer error; conserva <code>package-lock.json</code> y Node 22; no uses <code>npm install</code> a ciegas</td>
+</tr>
+<tr>
+<td><code>502 Bad Gateway</code></td>
+<td>Nginx no puede hablar con API</td>
+<td>Mira <code>ps</code> y <code>logs --tail=100 api</code>; verifica que el servicio se llame <code>api</code></td>
+</tr>
+<tr>
+<td>La portada abre pero no carga datos</td>
+<td>API o bases fallan</td>
+<td>Ejecuta <code>verificar_servicios.py</code>; el health HTTP solo no basta</td>
+</tr>
+<tr>
+<td><code>Connection refused</code> hacia <code>.14</code></td>
+<td>Motor apagado, puerto equivocado o escucha local</td>
+<td>Revisa servicio y <code>ss -lntp</code> en DATOS</td>
+</tr>
+<tr>
+<td>Timeout hacia <code>.14</code></td>
+<td>Firewall o ruta</td>
+<td>Revisa <code>ip route get 10.10.10.14</code>, ACL y reglas para origen <code>.13</code></td>
+</tr>
+<tr>
+<td>PostgreSQL rechaza usuario o <code>pg_hba</code></td>
+<td>Cuenta/contraseña incorrecta, TLS o IP no autorizada</td>
+<td>Revisa DATOS y regenera el archivo privado si cambiaron credenciales</td>
+</tr>
+<tr>
+<td><code>NOAUTH</code>, <code>WRONGPASS</code> o <code>NOPERM</code> Redis</td>
+<td>Falta autenticación o permisos ACL</td>
+<td>Usa la cuenta <code>cociber_app</code> y su contraseña Redis, no la de PostgreSQL</td>
+</tr>
+<tr>
+<td><code>relation does not exist</code> o columnas faltantes</td>
+<td>Destino vacío o esquema distinto</td>
+<td>Completa restauración/migración; no habilites creación automática</td>
+</tr>
+<tr>
+<td><code>admin</code> no inicia sesión</td>
+<td>No es un usuario automático</td>
+<td>Usa tu cuenta web restaurada o el asistente inicial solo si no hay usuarios</td>
+</tr>
+<tr>
+<td>Terminal en blanco</td>
+<td>Guacamole, WebSocket o ruta a las VM</td>
+<td>Comprueba modo real, direcciones actuales y reglas de red; revisa logs sin publicar secretos</td>
+</tr>
+<tr>
+<td><code>Origin no permitido</code></td>
+<td>La URL usada no coincide con <code>PUBLIC_ORIGIN</code></td>
+<td>Usa <code>http://10.10.10.13</code> o configura la URL real y recrea contenedores</td>
+</tr>
+<tr>
+<td>No aparecen cambios nuevos</td>
+<td>Imagen antigua o caché del navegador</td>
+<td>Reconstruye y recrea; después Ctrl+F5 en el navegador</td>
+</tr>
+<tr>
+<td>Tras reiniciar no vuelve</td>
+<td>Docker no habilitado o contenedores detenidos manualmente</td>
+<td><code>sudo systemctl enable --now docker</code> y <code>sudo docker compose -f compose.web.yml up -d</code></td>
+</tr>
+</tbody></table>
+<p>Al pedir ayuda, comparte el comando, el primer error y el estado de los servicios. Revisa los registros antes de copiarlos y retira contraseñas, tokens y URLs privadas.</p>
+<h2 id="paso-19">19 Lista final de comprobación</h2>
+<ul>
+<li><input disabled="" type="checkbox"> WEB ejecuta Ubuntu Server 26.04 y tiene <code>10.10.10.13/24</code> persistente.</li>
+<li><input disabled="" type="checkbox"> Gateway, DNS y tarjeta de red están confirmados.</li>
+<li><input disabled="" type="checkbox"> DATOS responde en <code>.14</code>, tiene la base <code>cociber_ctf</code> y las cuentas <code>cociber_app</code>.</li>
+<li><input disabled="" type="checkbox"> Se conservaron los datos anteriores o se eligió conscientemente la instalación nueva.</li>
+<li><input disabled="" type="checkbox"> El código copiado incluye los cambios locales recientes.</li>
+<li><input disabled="" type="checkbox"> Los secretos están fuera del código y del ZIP; <code>web.env</code> tiene permisos 600.</li>
+<li><input disabled="" type="checkbox"> El Compose nuevo enumera únicamente <code>api</code> y <code>web</code>.</li>
+<li><input disabled="" type="checkbox"> El build terminó sin errores y <code>pip check</code> / <code>nginx -t</code> aprobaron.</li>
+<li><input disabled="" type="checkbox"> El verificador confirma PostgreSQL, TLS, esquema y Redis autenticado.</li>
+<li><input disabled="" type="checkbox"> Existe un usuario administrador de la plataforma y puede iniciar sesión.</li>
+<li><input disabled="" type="checkbox"> Se ven los usuarios, retos y puntos esperados.</li>
+<li><input disabled="" type="checkbox"> La API anterior no está ejecutando limpieza sobre la misma base.</li>
+<li><input disabled="" type="checkbox"> El navegador abre <code>http://10.10.10.13</code> y las rutas internas funcionan.</li>
+<li><input disabled="" type="checkbox"> Se validaron ranking, WebSocket y, si aplica, terminal e inicio/cierre de laboratorio.</li>
+<li><input disabled="" type="checkbox"> El reinicio de WEB conserva el funcionamiento.</li>
+<li><input disabled="" type="checkbox"> Hay un respaldo fuera de la VM y un procedimiento de recuperación.</li>
+<li><input disabled="" type="checkbox"> Antes de ampliar el acceso, se resolvieron HTTPS y las restricciones de red.</li>
+</ul>
+<h2 id="paso-20">20 Trazabilidad y referencias</h2>
+<p>Se contrastó la carpeta activa con los chats <strong>Estabiliza la plataforma CTF</strong>, <strong>Revisa chats y carpetas de CTF</strong>, <strong>Verificar acceso al proyecto CTF</strong> y <strong>Datos proyecto CTF</strong>. Los resúmenes históricos se contrastaron con el código actual; no demuestran por sí solos que las nuevas VM estén instaladas.</p>
+<p>Archivos principales consultados: <code>backend/Dockerfile</code>, <code>backend/requirements.txt</code>, <code>backend/app/core.py</code>, <code>backend/app/models.py</code>, <code>backend/app/services/bootstrap.py</code>, <code>frontend/Dockerfile</code>, <code>frontend/package.json</code>, <code>frontend/package-lock.json</code>, <code>frontend/nginx.conf</code>, <code>docker-compose.yml</code> y las guías <code>docs/05_APLICACION_Y_MIGRACION.md</code>, <code>docs/06_ACEPTACION_Y_RESPALDO.md</code> y los scripts SQL de <code>cociber-ctf-deploy</code>.</p>
+<p>Las instrucciones de construcción preservan las versiones declaradas por el proyecto; las imágenes por etiqueta y los rangos Python no son una lista congelada de versiones. Después de aprobar el despliegue, registra las imágenes y dependencias resueltas antes de actualizar. No se afirma que las etiquetas actuales del repositorio sean las últimas versiones disponibles.</p>
+<p>Fuentes oficiales complementarias:</p>
+<ul>
+<li><a href="https://ubuntu.com/server/docs/explanation/networking/configuring-networks/">Red en Ubuntu Server</a> para identificar interfaces y configurar red.</li>
+<li><a href="https://www.postgresql.org/docs/16/backup-dump.html">PostgreSQL 16 y copias lógicas</a> para respaldos y restauración.</li>
+<li><a href="https://www.postgresql.org/docs/current/auth-pg-hba-conf.html">Control de acceso PostgreSQL</a> para restringir clientes.</li>
+<li><a href="https://redis.io/docs/latest/operate/oss_and_stack/management/security/">Seguridad Redis</a> para autenticación y acceso de red.</li>
+<li><a href="https://nginx.org/en/docs/http/websocket.html">Nginx y WebSocket</a> para el proxy de las conexiones persistentes.</li>
+</ul>
+<p>Las plantillas acompañantes son auxiliares de este procedimiento. Se revisan y se ejecutan en tus servidores siguiendo el orden indicado; no sustituyen las pruebas de aceptación en las VM reales.</p>
+</main><script>
+document.querySelectorAll('pre').forEach(pre=>{const button=document.createElement('button');button.className='copy';button.textContent='Copiar';button.onclick=async()=>{try{await navigator.clipboard.writeText(pre.querySelector('code').textContent);button.textContent='Copiado';setTimeout(()=>button.textContent='Copiar',1600)}catch{button.textContent='Selecciona y copia el bloque'}};pre.append(button)});
+</script></body></html>

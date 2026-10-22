@@ -1,0 +1,49 @@
+name: cociber-web
+
+services:
+  api:
+    image: cociber-api:despliegue-20261022
+    build: ./backend
+    env_file:
+      - /etc/cociber-ctf/web.env
+    environment:
+      FORWARDED_ALLOW_IPS: "*"
+      PYTHONPATH: /app
+    restart: unless-stopped
+    expose:
+      - "8000"
+    volumes:
+      - ./deploy:/opt/ctf-deploy:ro
+      - ./backend:/opt/ctf-source:ro
+    networks: [ctf_web]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    image: cociber-web:despliegue-20261022
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "10.10.10.13:80:80"
+    networks: [ctf_web]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  ctf_web:
+    driver: bridge

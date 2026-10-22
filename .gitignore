@@ -1,0 +1,16 @@
+.env
+.env.*
+*-original.env
+application-db.env
+web.env
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+*.dump
+*.sql.gz
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+work/
